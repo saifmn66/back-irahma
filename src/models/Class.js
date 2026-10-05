@@ -1,58 +1,75 @@
 const mongoose = require("mongoose");
 
-const studentSchema = new mongoose.Schema(
+const classSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      unique: true,
-    },
-
-    studentNumber: {
+    name: {
       type: String,
       required: true,
-      unique: true,
     },
 
-    // school: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "School",
-    //   required: true,
-    // },
-
-    dateOfBirth: Date,
-
-    gender: {
+    level: {
       type: String,
-      enum: ["male", "female"],
+      enum: ["7eme", "8eme", "9eme", "1ere", "2eme", "3eme", "4eme"],
+      required: true,
     },
 
-    address: String,
+    section: {
+      type: String,
+      enum: [
+        "lettres",
+        "science",
+        "informatique",
+        "economie_gestion",
+        "technique",
+        "math",
+      ],
+      required: function () {
+        return ["2eme", "3eme", "4eme"].includes(this.level);
+      },
+    },
 
-    class: {
+    school: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Class",
+      ref: "School",
+      required: true,
     },
 
-    parents: [
+    academicYear: {
+      type: String,
+      required: true,
+    },
+
+    students: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Parent",
+        ref: "Student",
       },
     ],
 
-    enrollmentDate: Date,
+    teachers: [
+      {
+        teacher: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Teacher",
+          required: true,
+        },
 
-    status: {
-      type: String,
-      enum: ["active", "graduated", "transferred", "inactive"],
-      default: "active",
+        subject: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Subject",
+          required: true,
+        },
+      },
+    ],
+
+    capacity: {
+      type: Number,
+      default: 30,
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-module.exports = mongoose.model("Student", studentSchema);
+module.exports = mongoose.model("Class", classSchema);
