@@ -15,7 +15,7 @@ const {
 
 const validate = require("../middleware/validation.middleware");
 
-//const { protect } = require("../middleware/auth.middleware");
+const { protect } = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 
 const router = express.Router();
