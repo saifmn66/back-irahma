@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const studentSchema = new mongoose.Schema(
+const teacherSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -9,10 +9,11 @@ const studentSchema = new mongoose.Schema(
       unique: true,
     },
 
-    studentNumber: {
+    teacherNumber: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
 
     school: {
@@ -30,23 +31,16 @@ const studentSchema = new mongoose.Schema(
 
     address: String,
 
-    class: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Class",
+    specialization: {
+      type: String,
+      trim: true,
     },
 
-    parents: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Parent",
-      },
-    ],
-
-    enrollmentDate: Date,
+    hireDate: Date,
 
     status: {
       type: String,
-      enum: ["active", "graduated", "transferred", "inactive"],
+      enum: ["active", "inactive", "on_leave", "retired"],
       default: "active",
     },
   },
@@ -55,4 +49,4 @@ const studentSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Student", studentSchema);
+module.exports = mongoose.model("Teacher", teacherSchema);
