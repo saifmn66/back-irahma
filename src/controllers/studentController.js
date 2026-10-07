@@ -2,14 +2,10 @@ const Student = require("../models/Student");
 const User = require("../models/User");
 
 // Create student
-exports.createStudent = async (req, res) => {
+const createStudent = async (req, res) => {
   try {
     const {
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
+      user,
       studentNumber,
       school,
       dateOfBirth,
@@ -17,30 +13,52 @@ exports.createStudent = async (req, res) => {
       address,
       class: classId,
       parents,
+      enrollmentDate,
+      status,
     } = req.body;
 
-    // Check if email already exists
-    const existingUser = await User.findOne({ email });
+    // Check user exists
+    const existingUser = await User.findById(user);
 
-    if (existingUser) {
-      return res.status(400).json({
-        message: "Email already exists",
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
-    // Create user
-    const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      role: "student",
+    // User must have student role
+    if (existingUser.role !== "student") {
+      return res.status(400).json({
+        success: false,
+        message: "User role must be student",
+      });
+    }
+
+    // Check if user already has a student profile
+    const existingStudent = await Student.findOne({ user });
+
+    if (existingStudent) {
+      return res.status(409).json({
+        success: false,
+        message: "This user is already a student",
+      });
+    }
+
+    // Check student number
+    const existingStudentNumber = await Student.findOne({
+      studentNumber,
     });
 
-    // Create student
+    if (existingStudentNumber) {
+      return res.status(409).json({
+        success: false,
+        message: "Student number already exists",
+      });
+    }
+
     const student = await Student.create({
-      user: user._id,
+      user,
       studentNumber,
       school,
       dateOfBirth,
@@ -48,149 +66,170 @@ exports.createStudent = async (req, res) => {
       address,
       class: classId,
       parents,
+      enrollmentDate,
+      status,
     });
 
+    const populatedStudent = await Student.findById(student._id)
+      .populate("user", "-password")
+      .populate("school")
+      .populate("class")
+      .populate("parents");
+
     res.status(201).json({
+      success: true,
       message: "Student created successfully",
-      student,
+      data: populatedStudent,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error creating student",
+      success: false,
+      message: "Failed to create student",
       error: error.message,
     });
   }
 };
 
 // Get all students
-exports.getStudents = async (req, res) => {
+const getStudents = async (req, res) => {
   try {
     const students = await Student.find()
       .populate("user", "-password")
       .populate("school")
       .populate("class")
-      .populate("parents", "-password");
+      .populate("parents");
 
     res.status(200).json({
+      success: true,
       count: students.length,
-      students,
+      data: students,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error fetching students",
+      success: false,
+      message: "Failed to get students",
       error: error.message,
     });
   }
 };
 
 // Get student by ID
-exports.getStudentById = async (req, res) => {
+const getStudentById = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id)
       .populate("user", "-password")
       .populate("school")
       .populate("class")
-      .populate("parents", "-password");
+      .populate("parents");
 
     if (!student) {
       return res.status(404).json({
+        success: false,
         message: "Student not found",
       });
     }
 
-    res.status(200).json(student);
+    res.status(200).json({
+      success: true,
+      data: student,
+    });
   } catch (error) {
     res.status(500).json({
-      message: "Error fetching student",
+      success: false,
+      message: "Failed to get student",
       error: error.message,
     });
   }
 };
 
 // Update student
-exports.updateStudent = async (req, res) => {
+const updateStudent = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
 
     if (!student) {
       return res.status(404).json({
+        success: false,
         message: "Student not found",
       });
     }
 
-    const {
-      studentNumber,
-      school,
-      dateOfBirth,
-      gender,
-      address,
-      class: classId,
-      parents,
-    } = req.body;
-
-    Object.assign(student, {
-      studentNumber,
-      school,
-      dateOfBirth,
-      gender,
-      address,
-      class: classId,
-      parents,
-    });
-
-    await student.save();
-
-    // Update User information if provided
+    // Check student number uniqueness
     if (
-      req.body.firstName ||
-      req.body.lastName ||
-      req.body.email ||
-      req.body.phone
+      req.body.studentNumber &&
+      req.body.studentNumber !== student.studentNumber
     ) {
-      await User.findByIdAndUpdate(student.user, {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        email: req.body.email,
-        phone: req.body.phone,
+      const existingStudent = await Student.findOne({
+        studentNumber: req.body.studentNumber,
+        _id: { $ne: student._id },
       });
+
+      if (existingStudent) {
+        return res.status(409).json({
+          success: false,
+          message: "Student number already exists",
+        });
+      }
     }
 
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    )
+      .populate("user", "-password")
+      .populate("school")
+      .populate("class")
+      .populate("parents");
+
     res.status(200).json({
+      success: true,
       message: "Student updated successfully",
-      student,
+      data: updatedStudent,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error updating student",
+      success: false,
+      message: "Failed to update student",
       error: error.message,
     });
   }
 };
 
 // Delete student
-exports.deleteStudent = async (req, res) => {
+const deleteStudent = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
 
     if (!student) {
       return res.status(404).json({
+        success: false,
         message: "Student not found",
       });
     }
 
-    // Delete associated user
-    await User.findByIdAndDelete(student.user);
-
-    // Delete student
     await Student.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
+      success: true,
       message: "Student deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error deleting student",
+      success: false,
+      message: "Failed to delete student",
       error: error.message,
     });
   }
+};
+
+module.exports = {
+  createStudent,
+  getStudents,
+  getStudentById,
+  updateStudent,
+  deleteStudent,
 };
