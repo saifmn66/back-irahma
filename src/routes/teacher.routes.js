@@ -15,22 +15,10 @@ const {
 
 const validate = require("../middleware/validation.middleware");
 
-const { protect } = require("../middleware/auth.middleware");
-const authorize = require("../middleware/role.middleware");
-
 const router = express.Router();
 
-// All teacher routes require authentication
-router.use(protect);
-
 // Create teacher
-router.post(
-  "/",
-  authorize("teacher"),
-  createTeacherValidator,
-  validate,
-  createTeacher,
-);
+router.post("/", createTeacherValidator, validate, createTeacher);
 
 // Get all teachers
 router.get("/", getTeachers);
@@ -39,15 +27,9 @@ router.get("/", getTeachers);
 router.get("/:id", getTeacherById);
 
 // Update teacher
-router.put(
-  "/:id",
-  authorize("teacher"),
-  updateTeacherValidator,
-  validate,
-  updateTeacher,
-);
+router.put("/:id", updateTeacherValidator, validate, updateTeacher);
 
 // Delete teacher
-router.delete("/:id", authorize("teacher"), deleteTeacher);
+router.delete("/:id", deleteTeacher);
 
 module.exports = router;

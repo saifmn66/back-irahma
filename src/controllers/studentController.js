@@ -1,51 +1,26 @@
+const bcrypt = require("bcryptjs");
 const Student = require("../models/Student");
-const User = require("../models/User");
+
 
 // Create student
 const createStudent = async (req, res) => {
   try {
     const {
-      user,
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
       studentNumber,
-      school,
       dateOfBirth,
       gender,
       address,
       class: classId,
-      parents,
       enrollmentDate,
       status,
     } = req.body;
 
-    // Check user exists
-    const existingUser = await User.findById(user);
-
-    if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    // User must have student role
-    if (existingUser.role !== "student") {
-      return res.status(400).json({
-        success: false,
-        message: "User role must be student",
-      });
-    }
-
-    // Check if user already has a student profile
-    const existingStudent = await Student.findOne({ user });
-
-    if (existingStudent) {
-      return res.status(409).json({
-        success: false,
-        message: "This user is already a student",
-      });
-    }
-
-    // Check student number
+    // Check student number uniqueness
     const existingStudentNumber = await Student.findOne({
       studentNumber,
     });
@@ -57,32 +32,69 @@ const createStudent = async (req, res) => {
       });
     }
 
-    const student = await Student.create({
-      user,
+    // Check email uniqueness if provided
+    if (email) {
+      const existingEmail = await Student.findOne({
+        email: email.toLowerCase().trim(),
+      });
+
+      if (existingEmail) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
+
+    // Prepare student data
+    const studentData = {
+      firstName,
+      lastName,
+      password: password || studentNumber,
       studentNumber,
-      school,
       dateOfBirth,
       gender,
       address,
-      class: classId,
-      parents,
       enrollmentDate,
       status,
-    });
+    };
 
+    // Add optional fields
+    if (email) {
+      studentData.email = email.toLowerCase().trim();
+    }
+
+    if (phone) {
+      studentData.phone = phone;
+    }
+
+    if (classId) {
+      studentData.class = classId;
+    }
+
+    // Create student
+    const student = await Student.create(studentData);
+
+    // Return student with class details, without password
     const populatedStudent = await Student.findById(student._id)
-      .populate("user", "-password")
-      .populate("school")
-      .populate("class")
-      .populate("parents");
+      .populate("class");
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Student created successfully",
       data: populatedStudent,
     });
   } catch (error) {
-    res.status(500).json({
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "A student with this unique value already exists",
+      });
+    }
+
+    console.error("Create student error:", error);
+
+    return res.status(500).json({
       success: false,
       message: "Failed to create student",
       error: error.message,
@@ -90,14 +102,12 @@ const createStudent = async (req, res) => {
   }
 };
 
+
 // Get all students
 const getStudents = async (req, res) => {
   try {
     const students = await Student.find()
-      .populate("user", "-password")
-      .populate("school")
       .populate("class")
-      .populate("parents");
 
     res.status(200).json({
       success: true,
@@ -117,10 +127,7 @@ const getStudents = async (req, res) => {
 const getStudentById = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id)
-      .populate("user", "-password")
-      .populate("school")
       .populate("class")
-      .populate("parents");
 
     if (!student) {
       return res.status(404).json({
@@ -154,7 +161,7 @@ const updateStudent = async (req, res) => {
       });
     }
 
-    // Check student number uniqueness
+    // Check student number uniqueness if updated
     if (
       req.body.studentNumber &&
       req.body.studentNumber !== student.studentNumber
@@ -172,18 +179,43 @@ const updateStudent = async (req, res) => {
       }
     }
 
+    // Check email uniqueness if updated
+    if (req.body.email && req.body.email !== student.email) {
+      const existingEmail = await Student.findOne({
+        email: req.body.email,
+        _id: { $ne: student._id },
+      });
+
+      if (existingEmail) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
+
+    const updateData = { ...req.body };
+
+    // Hash password if being updated directly
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 12);
+    }
+
+    // Support class field aliases if sent as classId
+    if (updateData.classId && !updateData.class) {
+      updateData.class = updateData.classId;
+      delete updateData.classId;
+    }
+
     const updatedStudent = await Student.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true,
       }
     )
-      .populate("user", "-password")
-      .populate("school")
-      .populate("class")
-      .populate("parents");
+      .populate("class");
 
     res.status(200).json({
       success: true,
@@ -191,6 +223,13 @@ const updateStudent = async (req, res) => {
       data: updatedStudent,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "A student with this unique value already exists",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Failed to update student",

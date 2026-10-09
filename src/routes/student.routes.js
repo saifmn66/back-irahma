@@ -15,15 +15,10 @@ const {
 
 const validate = require("../middleware/validation.middleware");
 
-const { protect } = require("../middleware/auth.middleware");
-
 const router = express.Router();
 
-// All student routes require authentication
-router.use(protect);
-
 // Create student
-router.post("/", createStudentValidator, validate, createStudent);
+router.post("/create", createStudentValidator, createStudent);
 
 // Get all students
 router.get("/", getStudents);

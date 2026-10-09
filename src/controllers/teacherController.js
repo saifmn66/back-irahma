@@ -1,11 +1,15 @@
+const bcrypt = require("bcryptjs");
 const Teacher = require("../models/Teacher");
-const User = require("../models/User");
 
 // Create teacher
 const createTeacher = async (req, res) => {
   try {
     const {
-      user,
+      firstName,
+      lastName,
+      email,
+      password,
+      phone,
       teacherNumber,
       school,
       dateOfBirth,
@@ -15,34 +19,6 @@ const createTeacher = async (req, res) => {
       hireDate,
       status,
     } = req.body;
-
-    // Check user exists
-    const existingUser = await User.findById(user);
-
-    if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    // User must have teacher role
-    if (existingUser.role !== "teacher") {
-      return res.status(400).json({
-        success: false,
-        message: "User role must be teacher",
-      });
-    }
-
-    // Check if user is already linked to a teacher
-    const existingTeacher = await Teacher.findOne({ user });
-
-    if (existingTeacher) {
-      return res.status(409).json({
-        success: false,
-        message: "This user is already a teacher",
-      });
-    }
 
     // Check teacher number
     const existingTeacherNumber = await Teacher.findOne({
@@ -56,8 +32,22 @@ const createTeacher = async (req, res) => {
       });
     }
 
-    const teacher = await Teacher.create({
-      user,
+    // Check email uniqueness if email is provided
+    if (email) {
+      const existingEmail = await Teacher.findOne({ email });
+
+      if (existingEmail) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
+
+    const teacherData = {
+      firstName,
+      lastName,
+      password: password || teacherNumber,
       teacherNumber,
       school,
       dateOfBirth,
@@ -66,10 +56,14 @@ const createTeacher = async (req, res) => {
       specialization,
       hireDate,
       status,
-    });
+    };
+
+    if (email) teacherData.email = email;
+    if (phone) teacherData.phone = phone;
+
+    const teacher = await Teacher.create(teacherData);
 
     const populatedTeacher = await Teacher.findById(teacher._id)
-      .populate("user", "-password")
       .populate("school");
 
     res.status(201).json({
@@ -78,6 +72,13 @@ const createTeacher = async (req, res) => {
       data: populatedTeacher,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "A teacher with this unique value already exists",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Failed to create teacher",
@@ -90,7 +91,6 @@ const createTeacher = async (req, res) => {
 const getTeachers = async (req, res) => {
   try {
     const teachers = await Teacher.find()
-      .populate("user", "-password")
       .populate("school");
 
     res.status(200).json({
@@ -111,7 +111,6 @@ const getTeachers = async (req, res) => {
 const getTeacherById = async (req, res) => {
   try {
     const teacher = await Teacher.findById(req.params.id)
-      .populate("user", "-password")
       .populate("school");
 
     if (!teacher) {
@@ -164,15 +163,36 @@ const updateTeacher = async (req, res) => {
       }
     }
 
+    // Check email uniqueness if email is being changed
+    if (req.body.email && req.body.email !== teacher.email) {
+      const existingEmail = await Teacher.findOne({
+        email: req.body.email,
+        _id: { $ne: teacher._id },
+      });
+
+      if (existingEmail) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
+
+    const updateData = { ...req.body };
+
+    // Hash password if being updated directly
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 12);
+    }
+
     const updatedTeacher = await Teacher.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true,
       }
     )
-      .populate("user", "-password")
       .populate("school");
 
     res.status(200).json({
@@ -181,6 +201,13 @@ const updateTeacher = async (req, res) => {
       data: updatedTeacher,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "A teacher with this unique value already exists",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Failed to update teacher",

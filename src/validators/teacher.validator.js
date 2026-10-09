@@ -1,11 +1,41 @@
 const { body } = require("express-validator");
 
 const createTeacherValidator = [
-  body("user")
+  body("firstName")
+    .trim()
     .notEmpty()
-    .withMessage("User is required")
-    .isMongoId()
-    .withMessage("Invalid user ID"),
+    .withMessage("First name is required")
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters")
+    .matches(/^[A-Za-zÀ-ÿ\s'-]+$/)
+    .withMessage("First name contains invalid characters"),
+
+  body("lastName")
+    .trim()
+    .notEmpty()
+    .withMessage("Last name is required")
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Last name must be between 2 and 50 characters")
+    .matches(/^[A-Za-zÀ-ÿ\s'-]+$/)
+    .withMessage("Last name contains invalid characters"),
+
+  body("email")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
+
+  body("password")
+    .optional({ checkFalsy: true })
+    .isLength({ min: 6, max: 128 })
+    .withMessage("Password must be between 6 and 128 characters"),
+
+  body("phone")
+    .optional({ checkFalsy: true })
+    .trim()
+    .matches(/^\+?[0-9\s()-]{8,20}$/)
+    .withMessage("Please provide a valid phone number"),
 
   body("teacherNumber")
     .trim()
@@ -60,6 +90,40 @@ const createTeacherValidator = [
 ];
 
 const updateTeacherValidator = [
+  body("firstName")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters")
+    .matches(/^[A-Za-zÀ-ÿ\s'-]+$/)
+    .withMessage("First name contains invalid characters"),
+
+  body("lastName")
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Last name must be between 2 and 50 characters")
+    .matches(/^[A-Za-zÀ-ÿ\s'-]+$/)
+    .withMessage("Last name contains invalid characters"),
+
+  body("email")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
+
+  body("password")
+    .optional({ checkFalsy: true })
+    .isLength({ min: 6, max: 128 })
+    .withMessage("Password must be between 6 and 128 characters"),
+
+  body("phone")
+    .optional({ checkFalsy: true })
+    .trim()
+    .matches(/^\+?[0-9\s()-]{8,20}$/)
+    .withMessage("Please provide a valid phone number"),
+
   body("teacherNumber")
     .optional()
     .trim()

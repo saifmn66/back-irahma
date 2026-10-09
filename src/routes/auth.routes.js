@@ -1,21 +1,45 @@
 const express = require("express");
 
 const {
-  register,
   login,
+  changePassword,
   getMe,
   logout,
 } = require("../controllers/authController");
 
-const { createUserValidator } = require("../validators/user.validator");
+const {
+  loginValidator,
+  changePasswordValidator,
+} = require("../validators/auth.validator");
+
 const validate = require("../middleware/validation.middleware");
 const { protect } = require("../middleware/auth.middleware");
 
 const router = express.Router();
 
-router.post("/register", createUserValidator, validate, register);
-router.post("/login", login);
+// Login for student or teacher
+router.post("/login", loginValidator, validate, login);
+
+// Change password for currently logged-in student or teacher
+router.post(
+  "/change-password",
+  protect,
+  changePasswordValidator,
+  validate,
+  changePassword
+);
+router.put(
+  "/change-password",
+  protect,
+  changePasswordValidator,
+  validate,
+  changePassword
+);
+
+// Get current profile
 router.get("/me", protect, getMe);
-router.post("/logout", protect, logout);
+
+// Logout
+router.post("/logout", logout);
 
 module.exports = router;
