@@ -28,12 +28,6 @@ const classSchema = new mongoose.Schema(
       },
     },
 
-    school: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "School",
-      required: true,
-    },
-
     academicYear: {
       type: String,
       required: true,
