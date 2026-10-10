@@ -15,6 +15,7 @@ const classRoutes = require("./routes/class.routes");
 const subjectRoutes = require("./routes/subject.routes");
 const classSubjectRoutes = require("./routes/classSubject.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
+const timetableRoutes = require("./routes/timetable.routes");
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use("/api/classes", classRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/class-subjects", classSubjectRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/timetable", timetableRoutes);
 
 
 
