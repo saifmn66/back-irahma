@@ -9,7 +9,7 @@ const {
   getClassesByTeacher,
   updateClassSubject,
   deleteClassSubject,
-} = require("../controllers/classSubject.controller");
+} = require("../controllers/classSubjectController");
 
 const {
   createClassSubjectValidator,

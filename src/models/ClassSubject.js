@@ -27,3 +27,4 @@ const classSubjectSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+module.exports = mongoose.model("ClassSubject", classSubjectSchema);

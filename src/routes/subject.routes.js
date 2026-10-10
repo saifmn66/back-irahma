@@ -7,7 +7,7 @@ const {
   getSubjectById,
   updateSubject,
   deleteSubject,
-} = require("../controllers/subject.controller");
+} = require("../controllers/subjectController");
 
 const {
   validateSubjectId,

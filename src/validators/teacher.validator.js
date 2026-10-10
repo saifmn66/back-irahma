@@ -48,12 +48,6 @@ const createTeacherValidator = [
       "Teacher number can only contain letters, numbers and hyphens"
     ),
 
-  body("school")
-    .notEmpty()
-    .withMessage("School is required")
-    .isMongoId()
-    .withMessage("Invalid school ID"),
-
   body("dateOfBirth")
     .optional({ checkFalsy: true })
     .isISO8601()
@@ -133,11 +127,6 @@ const updateTeacherValidator = [
     .withMessage(
       "Teacher number can only contain letters, numbers and hyphens"
     ),
-
-  body("school")
-    .optional()
-    .isMongoId()
-    .withMessage("Invalid school ID"),
 
   body("dateOfBirth")
     .optional({ checkFalsy: true })
