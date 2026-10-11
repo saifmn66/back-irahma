@@ -218,13 +218,12 @@ const getMe = async (req, res) => {
     let profile = null;
 
     if (req.user.role === "teacher") {
-      profile = await Teacher.findById(req.user.id).populate("school");
+      profile = await Teacher.findById(req.user.id);
     } else if (req.user.role === "student") {
       profile = await Student.findById(req.user.id)
-        .populate("school")
-        .populate("class")
-        .populate("parents");
+        .populate("class");
     }
+
 
     if (!profile) {
       return res.status(404).json({

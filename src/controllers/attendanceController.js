@@ -53,6 +53,13 @@ const createAttendance = async (req, res) => {
       students,
     } = req.body;
 
+    if (startTime >= endTime) {
+      return res.status(400).json({
+        success: false,
+        message: "endTime must be later than startTime",
+      });
+    }
+
     const [existingClass, assignment, existingTeacher] =
       await Promise.all([
         Class.findById(classId),
@@ -360,6 +367,14 @@ const updateAttendance = async (req, res) => {
 
     const newDate = date ?? attendance.date;
     const newStartTime = startTime ?? attendance.startTime;
+    const newEndTime = endTime ?? attendance.endTime;
+
+    if (newStartTime >= newEndTime) {
+      return res.status(400).json({
+        success: false,
+        message: "endTime must be later than startTime",
+      });
+    }
 
     const duplicate = await Attendance.findOne({
       _id: { $ne: id },

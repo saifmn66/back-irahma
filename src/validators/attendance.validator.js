@@ -101,6 +101,19 @@ const createAttendanceValidator = [
   timeValidator("startTime"),
   timeValidator("endTime"),
 
+  body().custom((value) => {
+    if (
+      value.startTime &&
+      value.endTime &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(value.startTime) &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(value.endTime) &&
+      value.startTime >= value.endTime
+    ) {
+      throw new Error("endTime must be later than startTime");
+    }
+    return true;
+  }),
+
   studentArrayValidator(),
   ...studentItemValidators,
 
@@ -131,6 +144,16 @@ const updateAttendanceValidator = [
 
     if (Object.keys(value).some((key) => !allowedFields.includes(key))) {
       throw new Error("Request contains unsupported fields");
+    }
+
+    if (
+      value.startTime &&
+      value.endTime &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(value.startTime) &&
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(value.endTime) &&
+      value.startTime >= value.endTime
+    ) {
+      throw new Error("endTime must be later than startTime");
     }
 
     return true;

@@ -18,7 +18,8 @@ const validate = require("../middleware/validation.middleware");
 const router = express.Router();
 
 // Create student
-router.post("/create", createStudentValidator, createStudent);
+router.post("/create", createStudentValidator, validate, createStudent);
+
 
 // Get all students
 router.get("/", getStudents);

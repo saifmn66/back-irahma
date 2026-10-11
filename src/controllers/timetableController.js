@@ -26,6 +26,7 @@ const findConflicts = async ({
   day,
   startTime,
   endTime,
+  room,
   excludeId,
 }) => {
   const assignment = await ClassSubject.findById(classSubjectId);
@@ -93,6 +94,21 @@ const findConflicts = async ({
         },
       };
     }
+
+    // A room cannot host two classes at the same time.
+    if (
+      room &&
+      slot.room &&
+      room.trim().toLowerCase() === slot.room.trim().toLowerCase()
+    ) {
+      return {
+        error: {
+          status: 409,
+          message: "This room is already occupied during this time",
+          conflictId: slot._id,
+        },
+      };
+    }
   }
 
   return { assignment };
@@ -132,6 +148,7 @@ exports.createTimetable = async (req, res) => {
       day,
       startTime,
       endTime,
+      room,
     });
 
     if (result.error) {
@@ -321,12 +338,15 @@ exports.updateTimetable = async (req, res) => {
       });
     }
 
+    const nextRoom = updates.room !== undefined ? updates.room : timetable.room;
+
     const result = await findConflicts({
       classId: nextClassId,
       classSubjectId: nextClassSubjectId,
       day: nextDay,
       startTime: nextStartTime,
       endTime: nextEndTime,
+      room: nextRoom,
       excludeId: timetable._id,
     });
 

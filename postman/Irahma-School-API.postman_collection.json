@@ -1,0 +1,597 @@
+{
+  "info": {
+    "_postman_id": "irahma-school-api-v1",
+    "name": "Irahma School API",
+    "description": "Complete API test collection for Irahma School backend.\n\n**Folder order:** Auth → Teachers → Students → Classes → Subjects → ClassSubjects → Timetable → Attendance\n\n**Setup:** Run the Auth login first to capture the token, then seed IDs into the environment variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "authToken", "value": "" },
+    { "key": "newTeacherId", "value": "" },
+    { "key": "newStudentId", "value": "" },
+    { "key": "newClassId", "value": "" },
+    { "key": "newSubjectId", "value": "" },
+    { "key": "newCsId", "value": "" },
+    { "key": "newTimetableId", "value": "" },
+    { "key": "newAttendanceId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "POST login (teacher by teacherNumber)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('token returned', () => pm.expect(j.data.token).to.be.a('string'));",
+            "pm.collectionVariables.set('authToken', j.data.token);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/login",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"teacherNumber\": \"SEED-T001\",\n  \"password\": \"SEED-T001\",\n  \"role\": \"teacher\"\n}" }
+          }
+        },
+        {
+          "name": "POST login (student by studentNumber)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('role is student', () => pm.expect(pm.response.json().data.role).to.eql('student'));"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/login",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"studentNumber\": \"SEED-S001\",\n  \"password\": \"SEED-S001\",\n  \"role\": \"student\"\n}" }
+          }
+        },
+        {
+          "name": "POST login — wrong password → 401",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/login",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"teacherNumber\": \"SEED-T001\",\n  \"password\": \"wrong\"\n}" }
+          }
+        },
+        {
+          "name": "POST login — missing identifier → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/login",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"password\": \"test\"\n}" }
+          }
+        },
+        {
+          "name": "GET /api/auth/me (with token)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('profile present', () => pm.expect(pm.response.json().data.profile).to.exist);"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me",
+            "header": [{"key":"Authorization","value":"Bearer {{authToken}}"}]
+          }
+        },
+        {
+          "name": "GET /api/auth/me — no token → 401",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" }
+        },
+        {
+          "name": "POST /api/auth/change-password",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/change-password",
+            "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{authToken}}"}],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"SEED-T001\",\n  \"newPassword\": \"SEED-T001\"\n}" }
+          }
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/auth/logout" }
+        }
+      ]
+    },
+    {
+      "name": "Teachers",
+      "item": [
+        {
+          "name": "POST create teacher",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newTeacherId', pm.response.json().data._id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/teachers",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Teacher\",\n  \"teacherNumber\": \"PM-T-001\",\n  \"password\": \"secure123\",\n  \"specialization\": \"Biology\",\n  \"gender\": \"male\"\n}" }
+          }
+        },
+        {
+          "name": "POST create teacher — missing firstName → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/teachers",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"lastName\": \"Only\",\n  \"teacherNumber\": \"PM-T-002\"\n}" }
+          }
+        },
+        {
+          "name": "GET list all teachers",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('data is array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/teachers" }
+        },
+        {
+          "name": "GET teacher by ID",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/teachers/{{teacher1Id}}" }
+        },
+        {
+          "name": "PUT update teacher specialization",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/teachers/{{newTeacherId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"specialization\": \"Chemistry\"\n}" }
+          }
+        },
+        {
+          "name": "DELETE teacher",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/teachers/{{newTeacherId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "POST /api/students/create",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newStudentId', pm.response.json().data._id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/students/create",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Student\",\n  \"studentNumber\": \"PM-S-001\",\n  \"class\": \"{{classAId}}\",\n  \"gender\": \"female\"\n}" }
+          }
+        },
+        {
+          "name": "POST create — duplicate studentNumber → 409",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/students/create",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Dup\",\n  \"lastName\": \"Student\",\n  \"studentNumber\": \"PM-S-001\"\n}" }
+          }
+        },
+        {
+          "name": "GET list all students",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/students" }
+        },
+        {
+          "name": "GET student by ID",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/students/{{student1Id}}" }
+        },
+        {
+          "name": "PUT update student status",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/students/{{newStudentId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"graduated\"\n}" }
+          }
+        },
+        {
+          "name": "DELETE student",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/students/{{newStudentId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Classes",
+      "item": [
+        {
+          "name": "POST create 9eme class",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newClassId', pm.response.json().data._id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/classes",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"PM-9eme-A\",\n  \"level\": \"9eme\",\n  \"academicYear\": \"2026-2027\",\n  \"capacity\": 30\n}" }
+          }
+        },
+        {
+          "name": "POST 2eme without section → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/classes",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"PM-2eme-Bad\",\n  \"level\": \"2eme\",\n  \"academicYear\": \"2026-2027\"\n}" }
+          }
+        },
+        {
+          "name": "POST 2eme with section → 201",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('201', () => pm.response.to.have.status(201));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/classes",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"PM-2eme-Science\",\n  \"level\": \"2eme\",\n  \"section\": \"science\",\n  \"academicYear\": \"2026-2027\"\n}" }
+          }
+        },
+        {
+          "name": "GET list all classes",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/classes" }
+        },
+        {
+          "name": "GET class by ID",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/classes/{{classAId}}" }
+        },
+        {
+          "name": "GET class — invalid ID → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/classes/not-an-id" }
+        },
+        {
+          "name": "PUT update class capacity",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/classes/{{newClassId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"capacity\": 35\n}" }
+          }
+        },
+        {
+          "name": "DELETE class",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/classes/{{newClassId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Subjects",
+      "item": [
+        {
+          "name": "POST create subject",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newSubjectId', pm.response.json().data._id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/subjects",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Geography\",\n  \"code\": \"PM-GEO\"\n}" }
+          }
+        },
+        {
+          "name": "POST — missing name → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/subjects",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"code\": \"PM-NONAME\"\n}" }
+          }
+        },
+        {
+          "name": "GET list all subjects",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/subjects" }
+        },
+        {
+          "name": "GET subject by ID",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/subjects/{{mathSubjectId}}" }
+        },
+        {
+          "name": "PUT update subject name",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/subjects/{{newSubjectId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"World Geography\"\n}" }
+          }
+        },
+        {
+          "name": "DELETE subject",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/subjects/{{newSubjectId}}" }
+        }
+      ]
+    },
+    {
+      "name": "ClassSubjects",
+      "item": [
+        {
+          "name": "POST create assignment",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newCsId', pm.response.json().data._id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/class-subjects",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"subject\": \"{{mathSubjectId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"coefficient\": 4\n}" }
+          }
+        },
+        {
+          "name": "POST — duplicate class+subject → 409",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/class-subjects",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"subject\": \"{{mathSubjectId}}\",\n  \"teacher\": \"{{teacher1Id}}\"\n}" }
+          }
+        },
+        {
+          "name": "GET list all",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/class-subjects" }
+        },
+        {
+          "name": "GET by class",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/class-subjects/class/{{classAId}}" }
+        },
+        {
+          "name": "GET by teacher",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/class-subjects/teacher/{{teacher1Id}}" }
+        },
+        {
+          "name": "GET by ID",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/class-subjects/{{csA_MathId}}" }
+        },
+        {
+          "name": "PUT update coefficient",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/class-subjects/{{newCsId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"coefficient\": 5\n}" }
+          }
+        },
+        {
+          "name": "DELETE assignment",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/class-subjects/{{newCsId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Timetable",
+      "item": [
+        {
+          "name": "POST create valid slot",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newTimetableId', pm.response.json().data._id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/timetable",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"day\": \"Monday\",\n  \"startTime\": \"13:00\",\n  \"endTime\": \"14:00\",\n  \"room\": \"Room-PM\"\n}" }
+          }
+        },
+        {
+          "name": "POST — class conflict → 409",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/timetable",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_FrenchId}}\",\n  \"day\": \"Monday\",\n  \"startTime\": \"13:30\",\n  \"endTime\": \"14:30\"\n}" }
+          }
+        },
+        {
+          "name": "POST — ClassSubject wrong class → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/timetable",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csB_MathId}}\",\n  \"day\": \"Tuesday\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\"\n}" }
+          }
+        },
+        {
+          "name": "POST — endTime ≤ startTime → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/timetable",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"day\": \"Tuesday\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"08:00\"\n}" }
+          }
+        },
+        {
+          "name": "POST — invalid day → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/timetable",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"day\": \"Sunday\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\"\n}" }
+          }
+        },
+        {
+          "name": "POST — malformed time → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/timetable",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"day\": \"Tuesday\",\n  \"startTime\": \"8:00\",\n  \"endTime\": \"9:00\"\n}" }
+          }
+        },
+        {
+          "name": "POST — room conflict → 409",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/timetable",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classBId}}\",\n  \"classSubject\": \"{{csB_MathId}}\",\n  \"day\": \"Monday\",\n  \"startTime\": \"13:30\",\n  \"endTime\": \"14:30\",\n  \"room\": \"Room-PM\"\n}" }
+          }
+        },
+        {
+          "name": "GET list all",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/timetable" }
+        },
+        {
+          "name": "GET filter by day",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.response.json().data.forEach(e => pm.expect(e.day).to.eql('Monday'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/timetable?day=Monday" }
+        },
+        {
+          "name": "GET /api/timetable/class/:classId",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/timetable/class/{{classAId}}" }
+        },
+        {
+          "name": "GET timetable by ID",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('_id matches', () => pm.expect(pm.response.json().data._id).to.eql(pm.collectionVariables.get('newTimetableId')));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/timetable/{{newTimetableId}}" }
+        },
+        {
+          "name": "PUT update room (no self-conflict)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('room updated', () => pm.expect(pm.response.json().data.room).to.eql('Room-Updated'));"
+          ]}}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/timetable/{{newTimetableId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"room\": \"Room-Updated\"\n}" }
+          }
+        },
+        {
+          "name": "DELETE timetable slot",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/timetable/{{newTimetableId}}" }
+        },
+        {
+          "name": "GET deleted slot → 404",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/timetable/{{newTimetableId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "POST create valid record",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201', () => pm.response.to.have.status(201));",
+            "const d = pm.response.json().data;",
+            "pm.expect(d.students).to.be.an('array');",
+            "pm.collectionVariables.set('newAttendanceId', d._id);"
+          ]}}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/attendance",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"date\": \"2026-12-01\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\",\n  \"students\": [\n    { \"student\": \"{{student1Id}}\", \"status\": \"present\" },\n    { \"student\": \"{{student2Id}}\", \"status\": \"absent\" },\n    { \"student\": \"{{student3Id}}\", \"status\": \"late\", \"note\": \"10 min late\" },\n    { \"student\": \"{{student4Id}}\", \"status\": \"excused\", \"note\": \"sick\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "POST — duplicate session → 409",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/attendance",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"date\": \"2026-12-01\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\",\n  \"students\": [\n    { \"student\": \"{{student1Id}}\", \"status\": \"present\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "POST — student from wrong class → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/attendance",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"date\": \"2026-12-02\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\",\n  \"students\": [\n    { \"student\": \"{{student7Id}}\", \"status\": \"present\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "POST — duplicate student in list → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/attendance",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"date\": \"2026-12-03\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\",\n  \"students\": [\n    { \"student\": \"{{student1Id}}\", \"status\": \"present\" },\n    { \"student\": \"{{student1Id}}\", \"status\": \"absent\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "POST — invalid status → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/attendance",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"date\": \"2026-12-04\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\",\n  \"students\": [\n    { \"student\": \"{{student1Id}}\", \"status\": \"skipped\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "POST — endTime ≤ startTime → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/attendance",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_MathId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"date\": \"2026-12-05\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"08:00\",\n  \"students\": [\n    { \"student\": \"{{student1Id}}\", \"status\": \"present\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "POST — teacher mismatch → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "POST", "url": "{{baseUrl}}/api/attendance",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"class\": \"{{classAId}}\",\n  \"classSubject\": \"{{csA_FrenchId}}\",\n  \"teacher\": \"{{teacher1Id}}\",\n  \"date\": \"2026-12-06\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:00\",\n  \"students\": [\n    { \"student\": \"{{student1Id}}\", \"status\": \"present\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "GET list all",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('count field', () => pm.expect(pm.response.json()).to.have.property('count'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/attendance" }
+        },
+        {
+          "name": "GET by class",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/attendance/class/{{classAId}}" }
+        },
+        {
+          "name": "GET by class + date filter",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.response.json().data.forEach(r => pm.expect(r.date).to.contain('2026-12-01'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/attendance/class/{{classAId}}?date=2026-12-01" }
+        },
+        {
+          "name": "GET by teacher",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/attendance/teacher/{{teacher1Id}}" }
+        },
+        {
+          "name": "GET attendance by ID",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('students array', () => pm.expect(pm.response.json().data.students).to.be.an('array'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/attendance/{{newAttendanceId}}" }
+        },
+        {
+          "name": "GET non-existent → 404",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }}],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/attendance/000000000000000000000001" }
+        },
+        {
+          "name": "PUT update student statuses",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('students updated', () => pm.expect(pm.response.json().data.students).to.be.an('array').with.length.greaterThan(0));"
+          ]}}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/attendance/{{newAttendanceId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{\n  \"students\": [\n    { \"student\": \"{{student1Id}}\", \"status\": \"absent\", \"note\": \"Called in sick\" },\n    { \"student\": \"{{student2Id}}\", \"status\": \"present\" },\n    { \"student\": \"{{student3Id}}\", \"status\": \"late\" },\n    { \"student\": \"{{student4Id}}\", \"status\": \"excused\" }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "PUT empty body → 400",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] }}],
+          "request": { "method": "PUT", "url": "{{baseUrl}}/api/attendance/{{newAttendanceId}}",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": { "mode": "raw", "raw": "{}" }
+          }
+        },
+        {
+          "name": "DELETE attendance record",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }}],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/attendance/{{attendance3Id}}" }
+        }
+      ]
+    }
+  ]
+}

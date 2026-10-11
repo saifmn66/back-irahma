@@ -9,7 +9,7 @@ const {
   getAttendanceByTeacher,
   updateAttendance,
   deleteAttendance,
-} = require("../controllers/attendance.controller");
+} = require("../controllers/attendanceController");
 
 const {
   createAttendanceValidator,
