@@ -265,10 +265,27 @@ const deleteStudent = async (req, res) => {
   }
 };
 
+const getAllActiveStudentsNumber = async (req , res ) => {
+  try {
+    const activeStudentsCount = await Student.countDocuments({ status: "active" });
+    return res.status(200).json({
+      success: true,
+      count: activeStudentsCount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to get active students count",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createStudent,
   getStudents,
   getStudentById,
   updateStudent,
   deleteStudent,
+  getAllActiveStudentsNumber,
 };

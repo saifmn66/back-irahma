@@ -6,6 +6,7 @@ const {
   getStudentById,
   updateStudent,
   deleteStudent,
+  getAllActiveStudentsNumber,
 } = require("../controllers/studentController");
 
 const {
@@ -20,9 +21,11 @@ const router = express.Router();
 // Create student
 router.post("/create", createStudentValidator, validate, createStudent);
 
-
 // Get all students
 router.get("/", getStudents);
+
+// Get active students count — MUST be before /:id
+router.get("/count-active", getAllActiveStudentsNumber);
 
 // Get student by ID
 router.get("/:id", getStudentById);

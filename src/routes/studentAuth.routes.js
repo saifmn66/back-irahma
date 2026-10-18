@@ -7,7 +7,7 @@ const {
   getStudentMe,
 } = require("../controllers/studentAuthController");
 
-const { protect } = require("../middlewares/authMiddleware");
+const { protect } = require("../middleware/auth.middleware");
 
 router.post("/login", loginStudent);
 router.patch("/change-password", protect, changeStudentPassword);

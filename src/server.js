@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 
 const cors = require("cors");
 
-const authRoutes = require("./routes/auth.routes");
+const authRoutes = require("./routes/studentAuth.routes");
 const teacherRoutes = require("./routes/teacher.routes");
 const studentRoutes = require("./routes/student.routes");
 const classRoutes = require("./routes/class.routes");
@@ -27,7 +27,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/stud-auth", authRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/classes", classRoutes);
