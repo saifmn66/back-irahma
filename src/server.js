@@ -8,7 +8,9 @@ const mongoose = require("mongoose");
 
 const cors = require("cors");
 
-const authRoutes = require("./routes/studentAuth.routes");
+const authRoutes = require("./routes/auth.routes");
+const studentAuthRoutes = require("./routes/studentAuth.routes");
+const staffRoutes = require("./routes/staff.routes");
 const teacherRoutes = require("./routes/teacher.routes");
 const studentRoutes = require("./routes/student.routes");
 const classRoutes = require("./routes/class.routes");
@@ -16,6 +18,7 @@ const subjectRoutes = require("./routes/subject.routes");
 const classSubjectRoutes = require("./routes/classSubject.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const timetableRoutes = require("./routes/timetable.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 const app = express();
 
@@ -27,7 +30,10 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/api/stud-auth", authRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/stud-auth", studentAuthRoutes);
+app.use("/api/staff", staffRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/classes", classRoutes);

@@ -7,7 +7,10 @@ const {
   createStaffValidator,
   updateStaffValidator,
   updateStaffStatusValidator,
-} = require("../validators/staffValidator");
+} = require("../validators/staff.validator");
+
+// Staff login
+router.post("/login", staffController.loginStaff);
 
 // Create staff
 router.post("/", createStaffValidator, staffController.createStaff);

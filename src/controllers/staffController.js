@@ -1,4 +1,67 @@
 const Staff = require("../models/Staff");
+const generateToken = require("../utils/generateToken");
+
+// Login staff member
+exports.loginStaff = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    const staff = await Staff.findOne({
+      email: email.toLowerCase().trim(),
+    }).select("+password");
+
+    if (!staff) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    if (staff.status === "inactive") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is inactive. Please contact the administrator.",
+      });
+    }
+
+    const isMatch = await staff.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    const token = generateToken(staff._id, staff.role);
+
+    const userProfile = staff.toObject();
+    delete userProfile.password;
+    delete userProfile.__v;
+
+    return res.status(200).json({
+      success: true,
+      message: "Staff login successful",
+      data: {
+        token,
+        role: staff.role,
+        user: userProfile,
+      },
+    });
+  } catch (error) {
+    console.error("Staff login error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error during staff login",
+    });
+  }
+};
 
 // Create a new staff member
 exports.createStaff = async (req, res) => {

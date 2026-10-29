@@ -103,11 +103,38 @@ const createStudent = async (req, res) => {
 };
 
 
-// Get all students
+// Get all students with optional search & filter params
 const getStudents = async (req, res) => {
   try {
-    const students = await Student.find()
+    const filter = {};
+
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    if (req.query.gender) {
+      filter.gender = req.query.gender;
+    }
+
+    if (req.query.class || req.query.classId) {
+      filter.class = req.query.class || req.query.classId;
+    }
+
+    if (req.query.search) {
+      const search = req.query.search.trim();
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escapedSearch, "i");
+      filter.$or = [
+        { firstName: regex },
+        { lastName: regex },
+        { studentNumber: regex },
+        { email: regex },
+      ];
+    }
+
+    const students = await Student.find(filter)
       .populate("class")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -118,6 +145,33 @@ const getStudents = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to get students",
+      error: error.message,
+    });
+  }
+};
+
+// Bulk delete students
+const bulkDeleteStudents = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "An array of student IDs is required",
+      });
+    }
+
+    const result = await Student.deleteMany({ _id: { $in: ids } });
+
+    return res.status(200).json({
+      success: true,
+      message: `${result.deletedCount} students deleted successfully`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete students",
       error: error.message,
     });
   }
@@ -287,5 +341,6 @@ module.exports = {
   getStudentById,
   updateStudent,
   deleteStudent,
+  bulkDeleteStudents,
   getAllActiveStudentsNumber,
 };

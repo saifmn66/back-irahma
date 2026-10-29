@@ -4,7 +4,7 @@ const Subject = require("../models/Subject");
 // CREATE SUBJECT
 const createSubject = async (req, res) => {
   try {
-    const { name, code } = req.body;
+    const { name, code, description, credits, category, color } = req.body;
 
     const existingSubject = await Subject.findOne({
       $or: [
@@ -23,6 +23,10 @@ const createSubject = async (req, res) => {
     const subject = await Subject.create({
       name: name.trim(),
       ...(code && { code: code.trim().toUpperCase() }),
+      ...(description !== undefined && { description }),
+      ...(credits !== undefined && { credits: Number(credits) }),
+      ...(category !== undefined && { category }),
+      ...(color !== undefined && { color }),
     });
 
     return res.status(201).json({
@@ -136,6 +140,10 @@ const updateSubject = async (req, res) => {
 
     if (name !== undefined) subject.name = newName;
     if (code !== undefined) subject.code = newCode;
+    if (req.body.description !== undefined) subject.description = req.body.description;
+    if (req.body.credits !== undefined) subject.credits = Number(req.body.credits);
+    if (req.body.category !== undefined) subject.category = req.body.category;
+    if (req.body.color !== undefined) subject.color = req.body.color;
 
     await subject.save();
 

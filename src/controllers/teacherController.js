@@ -139,10 +139,37 @@ const createTeacher = async (req, res) => {
   }
 };
 
-// Get all teachers
+// Get all teachers with optional search & filters
 const getTeachers = async (req, res) => {
   try {
-    const teachers = await Teacher.find().sort({ createdAt: -1 });
+    const filter = {};
+
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    if (req.query.specialization) {
+      filter.specialization = req.query.specialization;
+    }
+
+    if (req.query.gender) {
+      filter.gender = req.query.gender;
+    }
+
+    if (req.query.search) {
+      const search = req.query.search.trim();
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escapedSearch, "i");
+      filter.$or = [
+        { firstName: regex },
+        { lastName: regex },
+        { teacherNumber: regex },
+        { email: regex },
+        { specialization: regex },
+      ];
+    }
+
+    const teachers = await Teacher.find(filter).sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -153,6 +180,33 @@ const getTeachers = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to get teachers",
+      error: error.message,
+    });
+  }
+};
+
+// Bulk delete teachers
+const bulkDeleteTeachers = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "An array of teacher IDs is required",
+      });
+    }
+
+    const result = await Teacher.deleteMany({ _id: { $in: ids } });
+
+    return res.status(200).json({
+      success: true,
+      message: `${result.deletedCount} teachers deleted successfully`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete teachers",
       error: error.message,
     });
   }
@@ -368,4 +422,5 @@ module.exports = {
   getTeacherById,
   updateTeacher,
   deleteTeacher,
+  bulkDeleteTeachers,
 };

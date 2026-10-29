@@ -6,6 +6,7 @@ const {
   getTeacherById,
   updateTeacher,
   deleteTeacher,
+  bulkDeleteTeachers,
 } = require("../controllers/teacherController");
 
 const {
@@ -19,6 +20,9 @@ const router = express.Router();
 
 // Create teacher
 router.post("/", createTeacherValidator, validate, createTeacher);
+
+// Bulk delete teachers
+router.post("/bulk-delete", bulkDeleteTeachers);
 
 // Get all teachers
 router.get("/", getTeachers);
