@@ -3,6 +3,7 @@ const ClassSubject = require("../models/ClassSubject");
 const Class = require("../models/Class");
 const Subject = require("../models/Subject");
 const Teacher = require("../models/Teacher");
+const Timetable = require("../models/Timetable");
 
 // Helper: populate references
 const populateClassSubject = (query) =>
@@ -303,6 +304,9 @@ const deleteClassSubject = async (req, res) => {
         message: "Class subject not found",
       });
     }
+
+    // Cascade delete any timetable entries referencing this classSubject
+    await Timetable.deleteMany({ classSubject: req.params.id });
 
     return res.status(200).json({
       success: true,

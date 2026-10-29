@@ -200,8 +200,6 @@ exports.getAllTimetables = async (req, res) => {
       Timetable.find(filter).sort({ day: 1, startTime: 1 })
     );
 
-    timetables = await timetables;
-
     if (teacherId) {
       timetables = timetables.filter(
         (slot) =>
