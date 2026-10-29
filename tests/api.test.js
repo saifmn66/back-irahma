@@ -218,6 +218,40 @@ describe("Students API", () => {
     expect(res.status).toBe(200);
   });
 
+  test("PUT /api/students/:id/change-class — changes student from class to another class", async () => {
+    const targetClass = await makeClass({ name: "API-TransferTargetClass" });
+    const res = await request(app)
+      .put(`/api/students/${studentId}/change-class`)
+      .send({
+        newClassId: targetClass._id.toString(),
+        reason: "Academic level adjustment",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.class._id.toString()).toBe(targetClass._id.toString());
+    expect(res.body.meta.newClass.name).toBe("API-TransferTargetClass");
+
+    // Repeat to same class should return 400
+    const repeatRes = await request(app)
+      .put(`/api/students/${studentId}/change-class`)
+      .send({
+        newClassId: targetClass._id.toString(),
+      });
+    expect(repeatRes.status).toBe(400);
+  });
+
+  test("PUT /api/students/:id/change-class — returns 400 when class at full capacity", async () => {
+    const fullClass = await makeClass({ name: "API-FullClass", capacity: 0 });
+    const res = await request(app)
+      .put(`/api/students/${studentId}/change-class`)
+      .send({
+        newClassId: fullClass._id.toString(),
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain("maximum capacity");
+  });
+
   test("DELETE /api/students/:id — removes student", async () => {
     const s = await makeStudent(testClass._id, { firstName: "ToDelete" });
     const del = await request(app).delete(`/api/students/${s._id}`);

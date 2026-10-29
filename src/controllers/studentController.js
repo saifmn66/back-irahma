@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const Student = require("../models/Student");
+const Class = require("../models/Class");
 
 
 // Create student
@@ -74,6 +76,12 @@ const createStudent = async (req, res) => {
 
     // Create student
     const student = await Student.create(studentData);
+
+    if (classId) {
+      await Class.findByIdAndUpdate(classId, {
+        $addToSet: { students: student._id },
+      });
+    }
 
     // Return student with class details, without password
     const populatedStudent = await Student.findById(student._id)
@@ -304,6 +312,12 @@ const deleteStudent = async (req, res) => {
       });
     }
 
+    if (student.class) {
+      await Class.findByIdAndUpdate(student.class, {
+        $pull: { students: student._id },
+      });
+    }
+
     await Student.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
@@ -335,6 +349,112 @@ const getAllActiveStudentsNumber = async (req , res ) => {
   }
 }
 
+// Change student from one class to another class
+const changeStudentClass = async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const targetClassId =
+      req.body.newClassId || req.body.classId || req.body.class;
+    const { reason } = req.body;
+
+    if (!mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student ID",
+      });
+    }
+
+    if (!targetClassId || !mongoose.isValidObjectId(targetClassId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid target class ID is required",
+      });
+    }
+
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    const targetClass = await Class.findById(targetClassId);
+    if (!targetClass) {
+      return res.status(404).json({
+        success: false,
+        message: "Target class not found",
+      });
+    }
+
+    const oldClassId = student.class ? student.class.toString() : null;
+
+    if (oldClassId && oldClassId === targetClassId.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: `Student is already enrolled in ${targetClass.name}`,
+      });
+    }
+
+    // Capacity verification
+    const currentStudentCount = await Student.countDocuments({
+      class: targetClass._id,
+      status: { $ne: "transferred" },
+      _id: { $ne: student._id },
+    });
+
+    if (
+      typeof targetClass.capacity === "number" &&
+      currentStudentCount >= targetClass.capacity
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Target class ${targetClass.name} has reached its maximum capacity (${targetClass.capacity} students)`,
+      });
+    }
+
+    let previousClass = null;
+    if (oldClassId) {
+      previousClass = await Class.findById(oldClassId);
+      await Class.findByIdAndUpdate(oldClassId, {
+        $pull: { students: student._id },
+      });
+    }
+
+    await Class.findByIdAndUpdate(targetClassId, {
+      $addToSet: { students: student._id },
+    });
+
+    student.class = targetClass._id;
+    await student.save();
+
+    const populatedStudent = await Student.findById(student._id).populate("class");
+
+    return res.status(200).json({
+      success: true,
+      message: previousClass
+        ? `Student transferred from ${previousClass.name} to ${targetClass.name} successfully`
+        : `Student assigned to ${targetClass.name} successfully`,
+      data: populatedStudent,
+      meta: {
+        previousClass: previousClass
+          ? { _id: previousClass._id, name: previousClass.name }
+          : null,
+        newClass: { _id: targetClass._id, name: targetClass.name },
+        reason: reason || null,
+        transferredAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("Change student class error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to change student class",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createStudent,
   getStudents,
@@ -343,4 +463,5 @@ module.exports = {
   deleteStudent,
   bulkDeleteStudents,
   getAllActiveStudentsNumber,
+  changeStudentClass,
 };

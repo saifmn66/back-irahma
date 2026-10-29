@@ -8,11 +8,13 @@ const {
   deleteStudent,
   bulkDeleteStudents,
   getAllActiveStudentsNumber,
+  changeStudentClass,
 } = require("../controllers/studentController");
 
 const {
   createStudentValidator,
   updateStudentValidator,
+  changeClassValidator,
 } = require("../validators/student.validator");
 
 const validate = require("../middleware/validation.middleware");
@@ -36,6 +38,20 @@ router.get("/:id", getStudentById);
 
 // Update student
 router.put("/:id", updateStudentValidator, validate, updateStudent);
+
+// Change student from one class to another class
+router.put(
+  "/:id/change-class",
+  changeClassValidator,
+  validate,
+  changeStudentClass
+);
+router.patch(
+  "/:id/change-class",
+  changeClassValidator,
+  validate,
+  changeStudentClass
+);
 
 // Delete student
 router.delete("/:id", deleteStudent);

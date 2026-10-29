@@ -160,7 +160,35 @@ const updateStudentValidator = [
     .withMessage("Invalid student status"),
 ];
 
+const changeClassValidator = [
+  body("newClassId")
+    .optional()
+    .isMongoId()
+    .withMessage("Target class ID must be a valid MongoDB ID"),
+  body("classId")
+    .optional()
+    .isMongoId()
+    .withMessage("Target class ID must be a valid MongoDB ID"),
+  body("class")
+    .optional()
+    .isMongoId()
+    .withMessage("Target class ID must be a valid MongoDB ID"),
+  body().custom((value, { req }) => {
+    const targetId = req.body.newClassId || req.body.classId || req.body.class;
+    if (!targetId) {
+      throw new Error("Target class ID is required");
+    }
+    return true;
+  }),
+  body("reason")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 300 })
+    .withMessage("Reason cannot exceed 300 characters"),
+];
+
 module.exports = {
   createStudentValidator,
   updateStudentValidator,
+  changeClassValidator,
 };
