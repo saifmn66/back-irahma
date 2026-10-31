@@ -24,7 +24,7 @@ jobs:
 
       - name: Run tests
         env:
-          MONGO_URI: ${{ secrets.MONGO_URI_TEST }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: npm test
 
