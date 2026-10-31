@@ -11,6 +11,7 @@ const {
 
 const {
   createClassValidator,
+  
   updateClassValidator,
   validateClassId,
 } = require("../validators/class.validator");
